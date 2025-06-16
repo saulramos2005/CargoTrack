@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id        Int     @id @default(autoincrement())
+  nombre    String
+  apellido  String
+  email     String  @unique
+  contraseña String
+  rol       Rol
+  paquetes  Paquete[]
+}
+
+model Almacen {
+  id       Int     @id @default(autoincrement())
+  linea1   String
+  linea2   String?
+  pais     String
+  estado   String
+  ciudad   String
+  postal   String
+  telefono String
+  paquetes Paquete[]
+  origenEnvios Envio[] @relation("Origen")
+  destinoEnvios Envio[] @relation("Destino")
+}
+
+model Paquete {
+  id          Int     @id @default(autoincrement())
+  tracking    String  @unique
+  largo       Float
+  ancho       Float
+  alto        Float
+  peso        Float
+  descripcion String
+  estado      EstadoPaquete
+  pieCubico   Float
+  cliente     Usuario @relation(fields: [clienteId], references: [id])
+  clienteId   Int
+  oficina     Almacen @relation(fields: [almacenId], references: [id])
+  almacenId   Int
+  envios      PaquetesEnvio[]
+  facturas    FacturaPaquete[]
+}
+
+model Envio {
+  id           Int     @id @default(autoincrement())
+  tipo         TipoEnvio
+  fechaSalida  DateTime
+  fechaLlegada DateTime
+  estado       EstadoEnvio
+  origen       Almacen @relation("Origen", fields: [origenId], references: [id])
+  origenId     Int
+  destino      Almacen @relation("Destino", fields: [destinoId], references: [id])
+  destinoId    Int
+  paquetes     PaquetesEnvio[]
+}
+
+model PaquetesEnvio {
+  id        Int     @id @default(autoincrement())
+  paquete   Paquete @relation(fields: [paqueteId], references: [id])
+  paqueteId Int
+  envio     Envio   @relation(fields: [envioId], references: [id])
+  envioId   Int
+}
+
+model Factura {
+  id         Int     @id @default(autoincrement())
+  estado     EstadoFactura
+  metodoPago String?
+  total      Float
+  pdfUrl     String?
+  cliente    Usuario @relation(fields: [clienteId], references: [id])
+  clienteId  Int
+  paquetes   FacturaPaquete[]
+}
+
+model FacturaPaquete {
+  id         Int     @id @default(autoincrement())
+  paquete    Paquete @relation(fields: [paqueteId], references: [id])
+  paqueteId  Int
+  factura    Factura @relation(fields: [facturaId], references: [id])
+  facturaId  Int
+  monto      Float
+}
+
+enum EstadoPaquete {
+  RECIBIDO
+  EN_TRANSITO
+  DISPONIBLE
+  DESPACHADO
+}
+
+enum EstadoEnvio {
+  EN_PUERTO
+  EN_TRANSITO
+  EN_DESTINO
+}
+
+enum EstadoFactura {
+  GENERADA
+  PAGADA
+}
+
+enum TipoEnvio {
+  AVION
+  BARCO
+}
+
+enum Rol {
+  ADMIN
+  EMPLEADO
+  CLIENTE
+}
