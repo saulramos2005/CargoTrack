@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Cliente_prueba {
+  id Int @id @default(autoincrement())
+  nombre String
+}
 model Usuario {
   id        Int     @id @default(autoincrement())
   nombre    String
