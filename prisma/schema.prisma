@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Cliente_prueba {
+model Cliente_pruebaaaaaaa {
   id Int @id @default(autoincrement())
   nombre String
 }
