@@ -1,7 +1,7 @@
-import NextAuth from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import GitHub from "next-auth/providers/github";
 
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     GitHub({
       clientId: process.env.GITHUB_CLIENT_ID as string,
@@ -9,12 +9,5 @@ export const authOptions = {
     }),
   ],
   secret: process.env.AUTH_SECRET as string,
-  trustHost: true, // Necesario para Vercel
+  //trustHost: true, // Necesario para Vercel
 };
-
-export const {
-  handlers: { GET, POST },
-  auth,
-  signIn,
-  signOut,
-} = NextAuth(authOptions);
