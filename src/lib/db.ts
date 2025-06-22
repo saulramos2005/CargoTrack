@@ -1,72 +1,75 @@
-import 'server-only';
+import { PrismaClient } from '@prisma/client';
 
-import { neon } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-http';
-import {
-  pgTable,
-  text,
-  numeric,
-  integer,
-  timestamp,
-  pgEnum,
-  serial
-} from 'drizzle-orm/pg-core';
-import { count, eq, ilike } from 'drizzle-orm';
-import { createInsertSchema } from 'drizzle-zod';
+// Singleton para el cliente Prisma
+const prismaClientSingleton = () => {
+  return new PrismaClient();
+};
 
-export const db = drizzle(neon(process.env.POSTGRES_URL!));
+declare global {
+  var prisma: undefined | ReturnType<typeof prismaClientSingleton>;
+}
 
-export const statusEnum = pgEnum('status', ['active', 'inactive', 'archived']);
+export const prisma = globalThis.prisma ?? prismaClientSingleton();
 
-export const products = pgTable('products', {
-  id: serial('id').primaryKey(),
-  imageUrl: text('image_url').notNull(),
-  name: text('name').notNull(),
-  status: statusEnum('status').notNull(),
-  price: numeric('price', { precision: 10, scale: 2 }).notNull(),
-  stock: integer('stock').notNull(),
-  availableAt: timestamp('available_at').notNull()
-});
+if (process.env.NODE_ENV !== 'production') globalThis.prisma = prisma;
 
-export type SelectProduct = typeof products.$inferSelect;
-export const insertProductSchema = createInsertSchema(products);
+// Esquemas y tipos (opcional, puedes moverlos a otro archivo)
+export type Product = {
+  id: number;
+  imageUrl: string;  // Usa el nombre camelCase
+  name: string;
+  status: string;
+  price: number;
+  stock: number;
+  availableAt: Date;
+};
 
+// Funciones adaptadas para Prisma
 export async function getProducts(
   search: string,
   offset: number
 ): Promise<{
-  products: SelectProduct[];
+  products: Product[];
   newOffset: number | null;
   totalProducts: number;
 }> {
-  // Always search the full table, not per page
   if (search) {
-    return {
-      products: await db
-        .select()
-        .from(products)
-        .where(ilike(products.name, `%${search}%`))
-        .limit(1000),
-      newOffset: null,
-      totalProducts: 0
-    };
+    const products = await prisma.product.findMany({
+      where: {
+        name: { contains: search, mode: 'insensitive' }
+      },
+      select: {
+        id: true,
+        name: true,
+        imageUrl: true,  // Usa el nombre del modelo (no el de la BD)
+        status: true,
+        price: true,
+        stock: true,
+        availableAt: true
+      },
+      take: 1000
+    });
+    return { products, newOffset: null, totalProducts: 0 };
   }
 
   if (offset === null) {
     return { products: [], newOffset: null, totalProducts: 0 };
   }
 
-  const totalProducts = await db.select({ count: count() }).from(products);
-  const moreProducts = await db.select().from(products).limit(5).offset(offset);
-  const newOffset = moreProducts.length >= 5 ? offset + 5 : null;
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({ skip: offset, take: 5 }), // <- Cambiado
+    prisma.product.count() // <- Cambiado
+  ]);
+
+  const newOffset = products.length >= 5 ? offset + 5 : null;
 
   return {
-    products: moreProducts,
+    products,
     newOffset,
-    totalProducts: totalProducts[0].count
+    totalProducts: total
   };
 }
 
 export async function deleteProductById(id: number) {
-  await db.delete(products).where(eq(products.id, id));
+  await prisma.product.delete({ where: { id } }); // <- Cambiado
 }

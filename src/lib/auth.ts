@@ -1,20 +1,8 @@
-import NextAuth from "next-auth";
-import GitHub from "next-auth/providers/github";
+// lib/auth.ts
+import NextAuth from 'next-auth';
+import authConfig from '@/auth.config';
 
-export const authOptions = {
-  providers: [
-    GitHub({
-      clientId: process.env.GITHUB_CLIENT_ID as string,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
-    }),
-  ],
-  secret: process.env.AUTH_SECRET as string,
-  trustHost: true, // Necesario para Vercel
-};
+const handler = NextAuth(authConfig);
 
-export const {
-  handlers: { GET, POST },
-  auth,
-  signIn,
-  signOut,
-} = NextAuth(authOptions);
+export const GET = handler.GET;
+export const POST = handler.POST;

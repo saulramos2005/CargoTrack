@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
-import { auth, signOut } from '@/lib/auth';
+import { auth } from '@/lib/session';
+import { signOut } from "next-auth/react"; // ✅ o desde `react` si es cliente
 import Image from 'next/image';
 import {
   DropdownMenu,

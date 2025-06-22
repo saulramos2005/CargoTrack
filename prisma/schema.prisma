@@ -115,3 +115,27 @@ model DetalleFactura {
   factura        Factura @relation(fields: [facturaNumero], references: [numero])
 }
 
+
+
+
+
+
+
+
+enum Status {
+  active
+  inactive
+  archived
+}
+
+model Product {
+  id         Int      @id @default(autoincrement())
+  imageUrl   String   @map("image_url")  // Mapea el campo de la BD
+  name       String
+  status     String
+  price      Float
+  stock      Int
+  availableAt DateTime @map("available_at")
+  
+  @@map("products")
+}
